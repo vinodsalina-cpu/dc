@@ -91,10 +91,119 @@ const evaluationPilotSource=`stateDiagram-v2
   HumanDecision --> EvidenceIntake: revise or reject
   Monitor --> EvidenceIntake: outcome and rollback evidence
   Inconclusive --> EvidenceIntake: collect only the missing evidence`;
+const mermaidLabel=value=>String(value).replace(/["\n\r]+/g,' ').trim();
+function capabilityFlowSource(capability){const inputs=capability.inputs.slice(0,2),steps=capability.process.slice(0,4),outputs=capability.outputs.slice(0,2),inputNodes=inputs.map((label,index)=>`    I${index}["${mermaidLabel(label)}"]`).join('\n'),stepNodes=steps.map((label,index)=>`    P${index}["${mermaidLabel(label)}"]${index?`\n    P${index-1} -->|validated state| P${index}`:''}`).join('\n'),outputNodes=outputs.map((label,index)=>`    O${index}["${mermaidLabel(label)}"]`).join('\n'),inputEdges=inputs.map((_,index)=>`  I${index} -->|input| P0`).join('\n'),outputEdges=outputs.map((_,index)=>`  P${steps.length-1} -->|reviewable output| O${index}`).join('\n');return`flowchart LR
+  subgraph INPUTS["Inputs"]
+    direction TB
+${inputNodes}
+  end
+  subgraph PLUGIN["Plugin-owned processing"]
+    direction LR
+${stepNodes}
+  end
+  subgraph OUTPUTS["Reviewable outputs"]
+    direction TB
+${outputNodes}
+  end
+${inputEdges}
+${outputEdges}
+  P${Math.min(1,steps.length-1)} -. review required .-> BLOCKED["Blocked: ${mermaidLabel(capability.failure).slice(0,92)}"]`}
+const sharedDiagramSources={
+ context:`flowchart LR
+  subgraph DEV["Developer workspace"]
+    direction LR
+    IDE["IDE and developer review"] -->|objective and explicit approval| PLUGIN["AI-SDLC plugin control layer"]
+  end
+  subgraph EVIDENCE["Project evidence boundary"]
+    direction TB
+    REPO["Repository and versioned artifacts"]
+    LEDGER["Session ledger and outcome references"]
+  end
+  subgraph COMPANY["Company AI platform"]
+    direction TB
+    COE["AI Centre of Excellence guidance"]
+    GW["OpenAI-compatible gateway"]
+    PMS["AI-enabled project management system"]
+  end
+  PLUGIN -->|verified references| REPO
+  PLUGIN -->|checkpoint and outcome| LEDGER
+  COE -->|versioned guidance profile| PLUGIN
+  PLUGIN -->|bounded request envelope| GW
+  GW -->|candidate and usage facts| PLUGIN
+  PLUGIN -->|work-item and evidence link| PMS`,
+ surface:`flowchart LR
+  subgraph SURFACES["Developer-facing surfaces"]
+    direction TB
+    PROMPT["Prompt Contract Compiler"]
+    GOAL["Goal and Phase Composer"]
+    GUIDE["Guidance Workbench"]
+  end
+  subgraph CORE["Shared plugin services"]
+    direction TB
+    PACKET["Task Memory Packet"]
+    CONTEXT["Context resolver"]
+    PREFLIGHT["Token preflight"]
+    LEDGER["Session ledger"]
+    EVAL["Evidence and evaluation"]
+  end
+  subgraph ADAPTERS["Company integration adapters"]
+    direction TB
+    GATEWAY["Gateway adapter"]
+    PMS["PMS adapter"]
+  end
+  PROMPT -->|contract| PACKET
+  GOAL -->|phase objective| PACKET
+  GUIDE -->|versioned guidance| PACKET
+  PACKET --> CONTEXT --> PREFLIGHT --> LEDGER --> EVAL
+  PACKET -->|render and dispatch| GATEWAY
+  LEDGER -->|ID and evidence link| PMS`,
+ sequence:`sequenceDiagram
+  actor Developer
+  participant Plugin
+  participant Repository
+  participant Gateway
+  actor Reviewer
+  participant PMS
+  Developer->>Plugin: Enter objective and acceptance evidence
+  Plugin->>Plugin: Validate contract locally
+  Plugin->>Repository: Resolve verified references
+  Repository-->>Plugin: Cited artifacts and hashes
+  Plugin-->>Developer: Preview packet, warnings and preflight
+  Developer->>Plugin: Approve explicit dispatch
+  Plugin->>Gateway: Bounded request envelope
+  Gateway-->>Plugin: Candidate and usage facts
+  Plugin-->>Reviewer: Diff, tests, provenance and limits
+  Reviewer-->>Plugin: Accept or request focused correction
+  Plugin->>PMS: Link work item and evidence reference
+  Plugin-->>Developer: Store outcome and resume checkpoint`,
+ roadmap:`flowchart LR
+  P0["P0 Alignment<br/>Boundary and pilot"] -->|approved scope| P1["P1 Vertical slice<br/>Working end-to-end"]
+  P1 -->|working slice| P2["P2 Integrations<br/>Gateway and PMS links"]
+  P2 -->|linked evidence| P3["P3 Measurement<br/>Comparable outcomes"]
+  P3 -->|calibrated proof| P4["P4 Scoped learning<br/>Verified corrections"]
+  P4 -->|scale gate| P5["P5 Ecosystem<br/>Portable capability packs"]`,
+ token:`flowchart LR
+  subgraph FACTS["Measured facts"]
+    direction TB
+    LOCAL["Exact local input counts"]
+    GATEWAY["Gateway usage facts"]
+  end
+  subgraph ESTIMATES["Calibrated estimates"]
+    direction TB
+    DISCOVERY["Discovery and tool trajectory"]
+    REPAIR["Generation, repair and retry"]
+  end
+  LOCAL --> DISCOVERY
+  GATEWAY --> REPAIR
+  DISCOVERY --> REVIEW["Human review and defects"]
+  REPAIR --> REVIEW
+  REVIEW --> OUTCOME["Outcome evidence"] --> CALIBRATION["Cohort calibration"] --> INTERVENTION["Split, narrow or add evidence"]
+  INTERVENTION -->|next measured run| LOCAL`
+};
 const diagramRegistry=Object.freeze([
- ...caps.map((cap,index)=>Object.freeze({id:`F${String(index).padStart(2,'0')}`,key:`capability.${cap.id}`,capabilityId:cap.id,title:`${cap.title} architecture`,description:`${cap.inputs.join(', ')} pass through ${cap.process.join(' → ')} to ${cap.outputs.join(', ')}.`,category:index===10?'feedback':'capability-flow',renderer:index===12?null:'mermaid',diagramKind:flowKinds[index],layout:index===10?'native':'elk',source:index===10?evaluationPilotSource:null,legacyFallback:()=>legacyFlowDiagram(cap),heightPolicy:'wide',textAlternative:`${cap.inputs.join(', ')} pass through ${cap.process.join(' → ')}; failure path: ${cap.failure}`,status:index===10?'pilot':index===12?'deferred-model':'planned',pilot:index===10})),
- Object.freeze({id:'S01',key:'system.context',systemKind:'context',title:'Company system context',description:'Developer workspace, company platform and project evidence boundaries.',category:'architecture',renderer:'mermaid',diagramKind:'flowchart',layout:'elk',source:null,legacyFallback:()=>legacySystemDiagram('context'),heightPolicy:'wide',textAlternative:'Developer IDE and plugin exchange bounded contracts with repository, CoE, gateway and PMS.',status:'planned',pilot:false}),
- Object.freeze({id:'S02',key:'system.surface',systemKind:'surface',title:'Product surface map',description:'Plugin product surfaces and shared services.',category:'architecture',renderer:null,diagramKind:'dependency',layout:'elk',source:null,legacyFallback:()=>legacySystemDiagram('surface'),heightPolicy:'wide',textAlternative:'Prompt Optimizer, Goal Composer and AI Guidance use packet, context, preflight, ledger and evidence services.',status:'reachability-decision',pilot:false,latent:true}),
+ ...caps.map((cap,index)=>Object.freeze({id:`F${String(index).padStart(2,'0')}`,key:`capability.${cap.id}`,capabilityId:cap.id,title:`${cap.title} architecture`,description:`${cap.inputs.join(', ')} pass through ${cap.process.join(' → ')} to ${cap.outputs.join(', ')}.`,category:index===10?'feedback':'capability-flow',renderer:index===12?null:'mermaid',diagramKind:flowKinds[index],layout:index===10?'native':'elk',source:index===10?evaluationPilotSource:index===12?null:capabilityFlowSource(cap),legacyFallback:()=>legacyFlowDiagram(cap),heightPolicy:'wide',textAlternative:`${cap.inputs.join(', ')} pass through ${cap.process.join(' → ')}; failure path: ${cap.failure}`,status:index===10?'pilot':index===12?'deferred-model':'planned',pilot:index===10})),
+ Object.freeze({id:'S01',key:'system.context',systemKind:'context',title:'Company system context',description:'Developer workspace, company platform and project evidence boundaries.',category:'architecture',renderer:'mermaid',diagramKind:'flowchart',layout:'elk',source:sharedDiagramSources.context,legacyFallback:()=>legacySystemDiagram('context'),heightPolicy:'wide',textAlternative:'Developer IDE and plugin exchange bounded contracts with repository, CoE, gateway and PMS.',status:'planned',pilot:false}),
+ Object.freeze({id:'S02',key:'system.surface',systemKind:'surface',title:'Product surface map',description:'Plugin product surfaces and shared services.',category:'architecture',renderer:'mermaid',diagramKind:'dependency',layout:'elk',source:sharedDiagramSources.surface,legacyFallback:()=>legacySystemDiagram('surface'),heightPolicy:'wide',textAlternative:'Prompt Optimizer, Goal Composer and AI Guidance use packet, context, preflight, ledger and evidence services.',status:'restore-planned',pilot:false,latent:true}),
  Object.freeze({id:'S03',key:'system.packet',systemKind:'packet',title:'Task Memory Packet architecture',description:'Nested provider-neutral packet architecture and evidence boundaries.',category:'architecture',renderer:'mermaid',diagramKind:'flowchart',layout:'elk',source:`flowchart TB
   subgraph EVIDENCE["Objective and project evidence"]
     direction LR
@@ -121,7 +230,7 @@ const diagramRegistry=Object.freeze([
   P -->|work-item and evidence link| PMS
   P --> REVIEW["Developer-reviewed candidate"]
   REVIEW --> OUTCOME["Outcome and resume checkpoint"]`,legacyFallback:()=>legacySystemDiagram('packet'),heightPolicy:'wide',textAlternative:'Objective and durable artifacts resolve into a packet, provider rendering, reviewed candidate and outcome record.',status:'pilot',pilot:true}),
- Object.freeze({id:'S04',key:'system.sequence',systemKind:'sequence',title:'End-to-end developer execution sequence',description:'Developer execution and explicit review sequence.',category:'workflow',renderer:'mermaid',diagramKind:'sequenceDiagram',layout:'native',source:null,legacyFallback:()=>legacySystemDiagram('sequence'),heightPolicy:'wide',textAlternative:'The task is validated, assembled, previewed, dispatched, reviewed and linked before outcome capture.',status:'planned',pilot:false}),
+ Object.freeze({id:'S04',key:'system.sequence',systemKind:'sequence',title:'End-to-end developer execution sequence',description:'Developer execution and explicit review sequence.',category:'workflow',renderer:'mermaid',diagramKind:'sequenceDiagram',layout:'native',source:sharedDiagramSources.sequence,legacyFallback:()=>legacySystemDiagram('sequence'),heightPolicy:'wide',textAlternative:'The task is validated, assembled, previewed, dispatched, reviewed and linked before outcome capture.',status:'planned',pilot:false}),
  Object.freeze({id:'S05',key:'system.agile',systemKind:'agile',title:'Agile team swimlane',description:'Team responsibilities and artifacts through an agile delivery loop.',category:'workflow',renderer:'mermaid',diagramKind:'flowchart',layout:'elk',source:`flowchart LR
   subgraph COL1[" "]
     direction TB
@@ -140,8 +249,8 @@ const diagramRegistry=Object.freeze([
   style COL1 fill:transparent,stroke:transparent
   style COL2 fill:transparent,stroke:transparent
   style COL3 fill:transparent,stroke:transparent`,legacyFallback:()=>legacySystemDiagram('agile'),heightPolicy:'wrapped-wide',textAlternative:'Capabilities enter refinement, ready, execution, review, done and retrospective activities.',status:'pilot',pilot:true}),
- Object.freeze({id:'S06',key:'system.roadmap',systemKind:'roadmap',title:'Capability dependencies and phased roadmap',description:'Phased dependencies and evidence gates.',category:'dependency',renderer:'mermaid',diagramKind:'flowchart',layout:'elk',source:null,legacyFallback:()=>legacySystemDiagram('roadmap'),heightPolicy:'wide',textAlternative:'Foundations enable a narrow slice, integrations, measurement, learning and later ecosystem work.',status:'planned',pilot:false}),
- Object.freeze({id:'S07',key:'system.token',systemKind:'token',title:'Token trajectory and evaluation loop',description:'Measured facts, estimates, outcomes and calibration.',category:'feedback',renderer:'mermaid',diagramKind:'flowchart',layout:'elk',source:null,legacyFallback:()=>legacySystemDiagram('token'),heightPolicy:'wide',textAlternative:'Measured facts and estimates remain separate while outcome evidence calibrates later interventions.',status:'planned',pilot:false})
+ Object.freeze({id:'S06',key:'system.roadmap',systemKind:'roadmap',title:'Capability dependencies and phased roadmap',description:'Phased dependencies and evidence gates.',category:'dependency',renderer:'mermaid',diagramKind:'flowchart',layout:'elk',source:sharedDiagramSources.roadmap,legacyFallback:()=>legacySystemDiagram('roadmap'),heightPolicy:'wide',textAlternative:'Foundations enable a narrow slice, integrations, measurement, learning and later ecosystem work.',status:'planned',pilot:false}),
+ Object.freeze({id:'S07',key:'system.token',systemKind:'token',title:'Token trajectory and evaluation loop',description:'Measured facts, estimates, outcomes and calibration.',category:'feedback',renderer:'mermaid',diagramKind:'flowchart',layout:'elk',source:sharedDiagramSources.token,legacyFallback:()=>legacySystemDiagram('token'),heightPolicy:'wide',textAlternative:'Measured facts and estimates remain separate while outcome evidence calibrates later interventions.',status:'planned',pilot:false})
 ]);
 const diagramRegistryByKey=new Map(diagramRegistry.map(record=>[record.key,record]));
 const requiredDiagramFields=['id','key','title','description','category','diagramKind','layout','legacyFallback','heightPolicy','textAlternative','status','pilot'];
@@ -150,7 +259,9 @@ function getDiagramRecord(key){const record=diagramRegistryByKey.get(key);if(!re
 let diagramInstanceSerial=0;function nextDiagramInstanceId(record){diagramInstanceSerial+=1;return `${record.id.toLowerCase()}-${diagramInstanceSerial}`}
 function diagramToolbar(title){return `<div class="diagram-toolbar" role="toolbar" aria-label="${esc(title)} controls"><button class="diagram-tool" data-act="out" aria-label="Zoom out" title="Zoom out">−</button><button class="diagram-tool" data-act="in" aria-label="Zoom in" title="Zoom in">+</button><button class="diagram-tool" data-act="fit" aria-label="Fit diagram" title="Fit diagram"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button><button class="diagram-tool" data-act="reset" aria-label="Reset view" title="Reset view"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8V3m0 0h5M5 3l3 3a8 8 0 1 1-2 8"/></svg></button><button class="diagram-tool" data-act="full" aria-label="Toggle full view" title="Toggle full view"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5"/></svg></button><details class="diagram-download"><summary aria-label="Download diagram" title="Download diagram"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 20h16"/></svg><span aria-hidden="true">⌄</span></summary><div class="diagram-download-options"><button data-act="export-svg">SVG</button><button data-act="export-png">PNG</button></div></details></div>`}
 function mountRegisteredDiagram(key,{legacy=true}={}){const record=getDiagramRecord(key),instanceId=nextDiagramInstanceId(record);if(legacy||!record.renderer||!record.source)return `<div class="registered-diagram" id="${instanceId}" data-diagram-id="${record.id}" data-diagram-key="${record.key}" data-renderer="legacy">${record.legacyFallback()}</div>`;return `<article class="diagram-card registered-diagram" id="${instanceId}" data-diagram-id="${record.id}" data-diagram-key="${record.key}" data-renderer="${record.renderer}" data-state="pending"><div class="diagram-head"><h4>${esc(record.title)}</h4><span class="diagram-status" aria-live="polite">Waiting</span></div>${diagramToolbar(record.title)}<div class="diagram-viewport" role="group" aria-label="${esc(record.title)} diagram viewport"></div><pre class="diagram-source" aria-label="Diagram source shown only at highest verbosity">${esc(record.source)}</pre><div class="diagram-fallback" hidden>${record.legacyFallback()}</div><p class="alt"><b>Text alternative:</b> ${esc(record.textAlternative)}</p></article>`}
-function capabilityDiagram(capability){return capability.id==='evaluation'?mountRegisteredDiagram('capability.evaluation',{legacy:legacyDiagramMode}):legacyFlowDiagram(capability)}
+const migratedDiagramIds=new Set(['S03','F10','S05']);
+function capabilityDiagram(capability){const record=getDiagramRecord(`capability.${capability.id}`);return migratedDiagramIds.has(record.id)?mountRegisteredDiagram(record.key,{legacy:legacyDiagramMode}):legacyFlowDiagram(capability)}
+function sharedDiagram(kind){const record=getDiagramRecord(`system.${kind}`);return migratedDiagramIds.has(record.id)?mountRegisteredDiagram(record.key,{legacy:legacyDiagramMode}):legacySystemDiagram(kind)}
 window.AtlasDiagrams=Object.freeze({records:diagramRegistry,get:getDiagramRecord,mount:mountRegisteredDiagram});
 document.documentElement.dataset.diagramRegistryCount=String(diagramRegistry.length);
 const node=(x,y,w,h,label,cls='')=>`<g><rect class="node ${cls}" x="${x}" y="${y}" width="${w}" height="${h}" rx="7"/><text x="${x+w/2}" y="${y+h/2-4}" text-anchor="middle">${esc(label)}</text></g>`;
