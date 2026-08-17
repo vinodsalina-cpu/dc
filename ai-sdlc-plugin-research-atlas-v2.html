@@ -76,7 +76,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 let capId=location.hash.split('/')[1]||'program',perspective=location.hash.split('/')[2]||'summary';if(!caps.some(c=>c.id===capId))capId='program';if(!perspectives.some(p=>p[0]===perspective))perspective='summary';
 const legacyDiagramMode=new URLSearchParams(location.search).get('diagrams')==='legacy';
 const legacyFlowDiagram=flowDiagram,legacySystemDiagram=systemDiagram;
-const flowKinds=['flowchart','flowchart','flowchart','flowchart','flowchart','flowchart','stateDiagram-v2','flowchart','stateDiagram-v2','flowchart','stateDiagram-v2','flowchart','dependency'];
+const flowKinds=['flowchart','flowchart','flowchart','flowchart','flowchart','flowchart','flowchart','flowchart','flowchart','flowchart','stateDiagram-v2','flowchart','dependency'];
 const evaluationPilotSource=`stateDiagram-v2
   direction TB
   [*] --> EvidenceIntake
