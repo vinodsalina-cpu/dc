@@ -27,6 +27,19 @@ section{margin:24px 0}section h3{font-size:18px;margin:0 0 8px}section h4{font-s
 @media(max-width:900px){.layout:not(.sidebar-collapsed){grid-template-columns:205px minmax(0,1fr)}.glance{grid-template-columns:repeat(2,minmax(0,1fr))}.grid3{grid-template-columns:1fr}.headrow{align-items:flex-start}.meta{justify-content:flex-start}}
 @media(max-width:700px){header{padding:12px 14px}.headrow{flex-direction:column;gap:12px}.meta{width:100%;gap:4px}.metadata-button{width:28px}.icon-action{width:36px;height:36px}.verbosity-control{flex:1;min-width:0}.verbosity-icon{width:14px;height:14px;margin-left:6px}.verbosity-label{padding-left:4px;font-size:12px}.verbosity-control select{min-width:0;width:100%;padding-right:20px;font-size:12px}.layout,.layout.sidebar-collapsed{grid-template-columns:72px minmax(0,1fr)}.capnav{padding:8px 7px}.capnav-head{margin-inline:0;justify-content:center}.capnav h2,.group-label,.chevron,.group-row>.node-info,.capitem>span:last-child,.cap-row>.node-info{display:none}.group-row{display:block}.group-toggle{display:grid;grid-template-columns:1fr;padding:7px 5px;place-items:center}.group-items{margin-left:22px;padding-left:4px}.capitem{display:grid;grid-template-columns:1fr;padding:8px 2px;text-align:center}.capitem::before{left:-4px;width:5px}.capnav small{display:none}main{padding:13px}.title h1{font-size:20px}.glance{grid-template-columns:1fr}.glance .wide{grid-column:auto}.grid2{grid-template-columns:1fr}.caphead h2{font-size:22px}.perspectives{padding:0}.perspectives button{padding:9px}.diagram svg{min-width:720px}}
 @media print{html,body{height:auto;overflow:visible}body{display:block}header,.perspectives,.capnav,.action,.tree-tooltip,.diagram-toolbar,.diagram-source,.diagram-status{display:none!important}.layout{display:block;height:auto;overflow:visible}.level{display:block!important}main{height:auto;overflow:visible;padding:0}.panel,.diagram,.diagram-card{box-shadow:none;break-inside:avoid}.diagram-card.fullscreen{position:static;inset:auto;border:1px solid #bbb}.diagram-viewport,.diagram-card.fullscreen .diagram-viewport{height:360px;background:white}a{color:inherit;text-decoration:none}body{background:white;color:black}section{break-inside:avoid}}
+/* Workspace parity: perspective controls and the active card form one right-hand workspace. */
+body{grid-template-rows:auto minmax(0,1fr)}
+.layout{column-gap:clamp(16px,2.2vw,22px);padding:clamp(14px,2vh,20px)}
+.content-workspace{display:grid;grid-template-rows:auto minmax(0,1fr);gap:14px;height:100%;min-width:0;min-height:0;overflow:hidden}
+.capnav{border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--paper) 72%,var(--bg))}
+.perspectives{gap:5px;margin:0;padding:5px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--paper) 94%,var(--bg));box-shadow:var(--shadow)}
+.perspectives button{flex:1 0 auto;border:0;border-radius:7px;padding:9px 12px;font-weight:650}
+.perspectives button:hover,.perspectives button:focus-visible{background:var(--paper);color:var(--ink)}
+.perspectives button[aria-selected="true"]{color:var(--accent);background:var(--soft);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+main{border:1px solid var(--line);border-radius:11px;background:color-mix(in srgb,var(--paper) 72%,var(--bg));box-shadow:var(--shadow)}
+.diagram-viewport{height:clamp(380px,48vw,540px)}
+[data-diagram-id="S01"] .diagram-viewport,[data-diagram-id="S03"] .diagram-viewport,[data-diagram-id="S05"] .diagram-viewport{height:clamp(380px,48vw,540px)}
+@media(max-width:700px){.layout{padding:10px;column-gap:10px}.content-workspace{gap:10px}.perspectives{padding:4px}.perspectives button{padding:8px 9px}.diagram-viewport,[data-diagram-id="S01"] .diagram-viewport,[data-diagram-id="S03"] .diagram-viewport,[data-diagram-id="S05"] .diagram-viewport{height:clamp(340px,62vw,480px)}}
 </style>
 </head>
 <body data-v="2">
@@ -36,8 +49,7 @@ section{margin:24px 0}section h3{font-size:18px;margin:0 0 8px}section h4{font-s
  <div class="header-popover purpose-popover" id="purpose-popover" role="dialog" aria-label="Atlas purpose" hidden><div class="header-popover-inner"><strong>Purpose</strong>Build a developer-side composition, project-memory, preflight, guidance, continuity and evidence layer that helps existing models work with project knowledge more consistently—while preserving engineering judgment and integrating with the company gateway and PMS.<div class="legend" aria-label="Claim legend"><span>Observed / external</span><span class="proposed">Proposed</span><span class="missing">Missing / unverified</span></div></div></div>
  <div class="header-popover metadata-popover" id="metadata-popover" role="dialog" aria-label="Document metadata" hidden><div class="header-popover-inner"><time class="metadata-date" datetime="2026-08-17"><small>Updated on</small>17 Aug 2026</time><div class="metadata-tags"><span>Production atlas</span><span>Fast migration active</span><span>Evidence retained</span></div></div></div>
 </header>
-<nav class="perspectives" role="tablist" aria-label="Perspectives" id="perspectives"></nav>
-<div class="layout" id="atlas-layout"><nav class="capnav" aria-label="Capability index"><div class="capnav-head"><h2>Capability map</h2><button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Collapse capability map" aria-expanded="true"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M11.5 3.5 6 9l5.5 5.5"/><path d="M3 2.5v13"/></svg></button></div><div id="capnav"></div></nav><main id="main" tabindex="-1"></main></div><aside class="tree-tooltip" id="tree-tooltip" role="tooltip" hidden></aside>
+<div class="layout" id="atlas-layout"><nav class="capnav" aria-label="Capability index"><div class="capnav-head"><h2>Capability map</h2><button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Collapse capability map" aria-expanded="true"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M11.5 3.5 6 9l5.5 5.5"/><path d="M3 2.5v13"/></svg></button></div><div id="capnav"></div></nav><div class="content-workspace"><nav class="perspectives" role="tablist" aria-label="Perspectives" id="perspectives"></nav><main id="main" tabindex="-1"></main></div></div><aside class="tree-tooltip" id="tree-tooltip" role="tooltip" hidden></aside>
 <noscript><main><h1>AI-SDLC Plugin Research &amp; Product Atlas</h1><p>This atlas requires JavaScript for its tabbed navigation. Its central proposal is a developer-side layer complementing—not replacing—the company model gateway and AI-enabled PMS.</p></main></noscript>
 <script>
 (()=>{'use strict';
@@ -231,24 +243,25 @@ const diagramRegistry=Object.freeze([
   P --> REVIEW["Developer-reviewed candidate"]
   REVIEW --> OUTCOME["Outcome and resume checkpoint"]`,legacyFallback:()=>legacySystemDiagram('packet'),heightPolicy:'wide',textAlternative:'Objective and durable artifacts resolve into a packet, provider rendering, reviewed candidate and outcome record.',status:'migrated',pilot:true}),
  Object.freeze({id:'S04',key:'system.sequence',systemKind:'sequence',title:'End-to-end developer execution sequence',description:'Developer execution and explicit review sequence.',category:'workflow',renderer:'mermaid',diagramKind:'sequenceDiagram',layout:'native',source:sharedDiagramSources.sequence,legacyFallback:()=>legacySystemDiagram('sequence'),heightPolicy:'wide',textAlternative:'The task is validated, assembled, previewed, dispatched, reviewed and linked before outcome capture.',status:'migrated',pilot:false}),
- Object.freeze({id:'S05',key:'system.agile',systemKind:'agile',title:'Agile team swimlane',description:'Team responsibilities and artifacts through an agile delivery loop.',category:'workflow',renderer:'mermaid',diagramKind:'flowchart',layout:'elk',source:`flowchart LR
-  subgraph COL1[" "]
-    direction TB
+ Object.freeze({id:'S05',key:'system.agile',systemKind:'agile',title:'Agile team swimlane',description:'Team responsibilities and artifacts through an agile delivery loop.',category:'workflow',renderer:'mermaid',diagramKind:'flowchart',layout:'dagre',source:`%%{init: {"flowchart": {"defaultRenderer": "dagre"}}}%%
+flowchart TB
+  subgraph ROW1[" "]
+    direction LR
     REF["1. Refinement<br/>Developer and lead<br/>Task contract and evidence gaps"] -->|ready decision| READY["2. Definition of Ready<br/>Delivery team<br/>Packet and budget gate"]
   end
-  subgraph COL2[" "]
-    direction TB
+  subgraph ROW2[" "]
+    direction LR
     EXEC["3. Execution<br/>Developer and gateway<br/>Checkpoint and usage facts"] -->|candidate and checkpoint| REVIEW["4. Review<br/>Independent reviewer<br/>Diff, tests and evidence"]
   end
-  subgraph COL3[" "]
-    direction TB
+  subgraph ROW3[" "]
+    direction LR
     DONE["5. Definition of Done<br/>Team and PMS<br/>Outcome reference"] -->|verified learning| RETRO["6. Retrospective<br/>Manager and AI CoE<br/>Scoped correction proposal"]
   end
   READY -->|accepted task| EXEC
   REVIEW -->|accepted evidence| DONE
-  style COL1 fill:transparent,stroke:transparent
-  style COL2 fill:transparent,stroke:transparent
-  style COL3 fill:transparent,stroke:transparent`,legacyFallback:()=>legacySystemDiagram('agile'),heightPolicy:'wrapped-wide',textAlternative:'Capabilities enter refinement, ready, execution, review, done and retrospective activities.',status:'migrated',pilot:true}),
+  style ROW1 fill:transparent,stroke:transparent
+  style ROW2 fill:transparent,stroke:transparent
+  style ROW3 fill:transparent,stroke:transparent`,legacyFallback:()=>legacySystemDiagram('agile'),heightPolicy:'content-aware',textAlternative:'Capabilities enter refinement, ready, execution, review, done and retrospective activities.',status:'migrated',pilot:true}),
  Object.freeze({id:'S06',key:'system.roadmap',systemKind:'roadmap',title:'Capability dependencies and phased roadmap',description:'Phased dependencies and evidence gates.',category:'dependency',renderer:'mermaid',diagramKind:'flowchart',layout:'elk',source:sharedDiagramSources.roadmap,legacyFallback:()=>legacySystemDiagram('roadmap'),heightPolicy:'wide',textAlternative:'Foundations enable a narrow slice, integrations, measurement, learning and later ecosystem work.',status:'migrated',pilot:false}),
  Object.freeze({id:'S07',key:'system.token',systemKind:'token',title:'Token trajectory and evaluation loop',description:'Measured facts, estimates, outcomes and calibration.',category:'feedback',renderer:'mermaid',diagramKind:'flowchart',layout:'elk',source:sharedDiagramSources.token,legacyFallback:()=>legacySystemDiagram('token'),heightPolicy:'wide',textAlternative:'Measured facts and estimates remain separate while outcome evidence calibrates later interventions.',status:'migrated',pilot:false})
 ]);
